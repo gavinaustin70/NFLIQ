@@ -1,0 +1,10 @@
+sportsdataverse
+numpy
+pandas
+requests
+seaborn
+matplotlib
+xgboost
+imbalanced-learn
+scikit-learn
+hyperopt

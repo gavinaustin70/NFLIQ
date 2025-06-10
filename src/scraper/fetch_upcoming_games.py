@@ -111,6 +111,3 @@ def get_upcoming_data():
     
     print("Data update process completed!")
     return
-
-if __name__ == "__main__":
-    get_upcoming_data()
