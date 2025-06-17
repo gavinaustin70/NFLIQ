@@ -1,13 +1,14 @@
 from src.preprocessing.Team import Team
-import numpy as np
 import pandas as pd
-import os
 from datetime import datetime
+from pathlib import Path
 
-# Globals
-curr_year = datetime.now().year
+BASE_PATH = '../../data'
+TEAM_DIR = f'{BASE_PATH}/test_jsons'
+GAMES_DIR = f'{BASE_PATH}/nfl_games'
 
 def preprocess_data():
+    curr_year = datetime.now().year
 
     def preprocess_team_stats(df):
         def get_rolling_df(df):
@@ -46,9 +47,9 @@ def preprocess_data():
                 try_year = curr_year
 
                 while True:
-                    json_path = f'../../data/team_jsons/{team}_2002_{try_year}.json'
+                    json_path = Path(f'{TEAM_DIR}/{team}_2002_{try_year}.json')
                     
-                    if os.path.exists(json_path):
+                    if json_path.exists():
                         team_df = pd.read_json(json_path)
                         break  # file found, break out of loop
                     else:
@@ -57,7 +58,7 @@ def preprocess_data():
                             raise FileNotFoundError(f"JSON for {team} does not exist or can't be found")
         
                 team_obj = Team(team_df, team)
-                cleaned_df = team_obj.assign_year().arrange_team_json().get_df()
+                cleaned_df = team_obj.preprocess_team().get_df()
                 teams_dict[team] = cleaned_df
                 
             except Exception as e:
@@ -71,6 +72,7 @@ def preprocess_data():
             df = get_rolling_df(df)
             all_team_stats = pd.concat([all_team_stats, df], axis=0, ignore_index=True)
 
+        all_team_stats.to_json(f'{BASE_PATH}/check.json')
         return all_team_stats
 
     def preprocess_nfl_games(df):
@@ -172,6 +174,11 @@ def preprocess_data():
         # Ensure the dataframe is sorted by year and week to process games chronologically
         nfl_df = nfl_df.sort_values(by=['Year', 'Week']).reset_index(drop=True)
 
+        # Remove ties
+        nfl_df = nfl_df[nfl_df['home_winner'] != nfl_df['away_winner']]
+
+        nfl_df['status_type_description'] = nfl_df['status_type_description'].astype(str)
+
         return nfl_df
 
     def merge_games_and_teams(df, to_merge):
@@ -192,10 +199,10 @@ def preprocess_data():
     
         return df
 
-    main_df = pd.read_json(f'../../data/nfl_games/nfl_2002_{curr_year}.json')
+    main_df = pd.read_json(Path(f'{GAMES_DIR}/nfl_2002_{curr_year}.json'))
     nfl_df = preprocess_nfl_games(main_df)
-    all_team_stats = preprocess_team_stats(nfl_df)
-    main_df = merge_games_and_teams(nfl_df, all_team_stats)
-    main_df.to_json(f'../../data/preprocessed_data/preprocessed_2002_{curr_year}.json')
+    total_team_stats = preprocess_team_stats(nfl_df)
+    main_df = merge_games_and_teams(nfl_df, total_team_stats)
+    main_df.to_json(Path(f'../../data/preprocessed_data/preprocessed_2002_{curr_year}.json'))
     print("Data preprocessing completed!")
     return
