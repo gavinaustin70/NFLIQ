@@ -4,7 +4,8 @@ __pycache__/
 *.pyo
 .idea/
 __pycache__/
-data/just_in_case_data
 *.pyc
 *.pyo
 .ipynb_checkpoints
+data/just_in_case_data
+data/keys/keys.env
